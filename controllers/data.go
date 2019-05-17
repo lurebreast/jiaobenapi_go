@@ -47,8 +47,8 @@ func (d *DataController) Post() {
 	o := orm.NewOrm()
 	data := new(models.Data)
 
-	project := models.Project{Typeid: Tid}
-	err := o.Read(&project)
+	var project models.Project
+	err := o.QueryTable(new(models.Project)).Filter("Typeid", Tid).One(&project, "IsDelete")
 	if err != nil {
 		d.Error("项目id错误")
 		return
@@ -309,17 +309,14 @@ func getOrderId(t int, isIncr bool) int {
 
 	var typedataid = "0"
 	key := "increment_order_id_" + typeid + "_2"
-	exists, _ := redis.Bool(r.Do("exists", key))
 
-	if !exists {
-		o := orm.NewOrm()
-		var list orm.ParamsList
-		num, err  := o.Raw("select orderid from typedata where tid=" + typeid + " order by id desc limit 1").ValuesFlat(&list)
-		if err == nil && num > 0 {
-			typedataid = list[0].(string)
+	//if exists, _ := redis.Bool(r.Do("exists", key)); !exists {
+		var data models.Data
+		err  := orm.NewOrm().QueryTable(new(models.Data)).Filter("Tid", typeid).OrderBy("-Orderid").Limit(1).One(&data, "Orderid")
+		if err == nil {
+			r.Do("set", key, data.Orderid)
 		}
-		r.Do("set", key, typedataid)
-	}
+	//}
 
 	if isIncr {
 		incr, _ := redis.Int64(r.Do("incr", key))
