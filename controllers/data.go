@@ -221,6 +221,13 @@ func (d *DataController) Getone() {
 		return
 	}
 
+	TidInt, _ := strconv.Atoi(Tid)
+
+	if getOrderId(TidInt, false) == 0 { // 通过序号检测项目是否存在
+		d.Error("项目id错误")
+		return
+	}
+
 	o := orm.NewOrm()
 
 	rc := RedisClient.Get();
@@ -256,7 +263,6 @@ func (d *DataController) Getone() {
 			return
 		}
 	} else {
-		TidInt, _ := strconv.Atoi(Tid)
 		OrderidInt := getOrderId(TidInt, false)
 
 		if Rand != "" {
@@ -310,13 +316,13 @@ func getOrderId(t int, isIncr bool) int {
 	var typedataid = "0"
 	key := "increment_order_id_" + typeid + "_2"
 
-	//if exists, _ := redis.Bool(r.Do("exists", key)); !exists {
+	if exists, _ := redis.Bool(r.Do("exists", key)); !exists {
 		var data models.Data
 		err  := orm.NewOrm().QueryTable(new(models.Data)).Filter("Tid", typeid).OrderBy("-Orderid").Limit(1).One(&data, "Orderid")
 		if err == nil {
 			r.Do("set", key, data.Orderid)
 		}
-	//}
+	}
 
 	if isIncr {
 		incr, _ := redis.Int64(r.Do("incr", key))
