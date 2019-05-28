@@ -291,15 +291,12 @@ func (d *DataController) Getone() {
 
 
 func saveImg(s string, Tid int, Orderid int, imgId string) string {
-	beego.Info(s)
 	s = strings.Replace(s, "data:image/png;base64,", "", -1)
 	s = strings.Replace(s, " ", "+", -1)
-
-	beego.Info(s)
 	decode, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
+		beego.Info(s)
 		beego.Error(err.Error())
-
 		return ""
 	}
 
