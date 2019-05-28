@@ -21,7 +21,7 @@ type Data struct {
 	DeviceMode string
 	DeviceVersion string
 	Imsi string
-	ImsiId string
+	SimId string
 	Name string
 	IdCard string
 }

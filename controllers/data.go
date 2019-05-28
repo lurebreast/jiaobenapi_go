@@ -20,6 +20,7 @@ type DataController struct {
 // @Title CreateUser
 // @Description 上传数据
 // @Param	Tid			post 	int 	true	"项目id"
+// @Param	Orderid		post	int 	false	"序号 当有值时更新数据"
 // @Param	Img			post 	string	false	"图片"
 // @Param	Img1		post 	string	false	"图片1"
 // @Param	Mobile		post	string	false	"手机号"
@@ -30,7 +31,7 @@ type DataController struct {
 // @Param	DeviceMode		post 	string 	false	"设备型号"
 // @Param	DeviceVersion	post 	string 	false	"设备系统版本"
 // @Param	Imsi			post	string	false	"imsi"
-// @Param	ImsiId			post	string	false	"imsi ID"
+// @Param	SimId			post	string	false	"SimId"
 // @Param	Name			post	string	false	"姓名"
 // @Param	IdCard			post	string	false	"身份证号码"
 // @Success 200 {object} models.Data
@@ -101,8 +102,8 @@ func (d *DataController) Post() {
 	if s := d.GetString("Imsi"); s != "" {
 		data.Imsi = s
 	}
-	if s := d.GetString("ImsiId"); s != "" {
-		data.ImsiId = s
+	if s := d.GetString("SimId"); s != "" {
+		data.SimId = s
 	}
 	if s := d.GetString("Name"); s != "" {
 		data.Name = s
@@ -128,6 +129,7 @@ func (d *DataController) Post() {
 
 	if isInsert {
 		data.Creattime = Timestamp
+		data.Status = 1
 		_, err := o.Insert(data)
 		if err != nil {
 			beego.Error(err)
@@ -256,7 +258,7 @@ func (d *DataController) Getone() {
 			data := new(models.Data)
 
 			data = &data1
-			data.Status = 1
+			data.Status = 2
 			o.Update(data, "Status")
 
 			d.success(data)
@@ -289,11 +291,15 @@ func (d *DataController) Getone() {
 
 
 func saveImg(s string, Tid int, Orderid int, imgId string) string {
+	beego.Info(s)
 	s = strings.Replace(s, "data:image/png;base64,", "", -1)
 	s = strings.Replace(s, " ", "+", -1)
+
+	beego.Info(s)
 	decode, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
 		beego.Error(err.Error())
+
 		return ""
 	}
 
