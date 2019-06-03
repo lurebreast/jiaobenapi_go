@@ -180,7 +180,7 @@ func (d *DataController) Count() {
 		qs := orm.NewOrm().QueryTable(new(models.Data)).Filter("Tid", Tid)
 
 		if Status == "1" {
-			qs = qs.Filter("Status", 1)
+			qs = qs.Filter("Status", 2)
 		}
 		if Day != 0 {
 			timeStr := time.Now().Format("2006-01-02")
@@ -239,16 +239,22 @@ func (d *DataController) Getone() {
 
 	TidKey := "tid_orderid_" + Tid
 	if Update == "1" {
-		if Rand != "" {
-			num := rand.Intn(1)
+		if Rand == "1" {
+			num := rand.Intn(2)
 			if num == 1 {
 				Orderid, _ = redis.String(rc.Do("RPOP", TidKey))
 			} else {
 				Orderid, _ = redis.String(rc.Do("LPOP", TidKey))
 			}
+			beego.Info(TidKey)
+			beego.Info(num)
+			beego.Info(Orderid)
 		} else {
 			if Orderid == "" {
 				Orderid, _ = redis.String(rc.Do("RPOP", TidKey))
+
+				beego.Info(TidKey)
+				beego.Info(Orderid)
 			}
 		}
 
@@ -269,7 +275,7 @@ func (d *DataController) Getone() {
 	} else {
 		OrderidInt := getOrderId(TidInt, false)
 
-		if Rand != "" {
+		if Rand == "1" {
 			Orderid1 := rand.Intn(OrderidInt - 1) + 1
 			Orderid = strconv.Itoa(Orderid1)
 		} else {
