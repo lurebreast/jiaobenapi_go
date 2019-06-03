@@ -5,8 +5,12 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
 	"github.com/gomodule/redigo/redis"
+	"github.com/nfnt/resize"
+	"image/png"
 	"io/ioutil"
+	"math"
 	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -119,12 +123,10 @@ func (d *DataController) Post() {
 	data.Updatetime = Timestamp
 
 	if img := d.GetString("Img"); img != "" {
-		img_path := saveImg(img, Tid, OrderId, "0")
-		data.Img = img_path
+		data.Img = saveImg(img, Tid, OrderId, "0")
 	}
 	if img1 := d.GetString("Img1"); img1 != "" {
-		img1_path := saveImg(img1, Tid, OrderId, "1")
-		data.Img1 = img1_path
+		data.Img1 = saveImg(img1, Tid, OrderId, "1")
 	}
 
 	if isInsert {
@@ -307,6 +309,37 @@ func saveImg(s string, Tid int, Orderid int, imgId string) string {
 		beego.Error(err.Error())
 		return ""
 	}
+
+	file, err := os.Open(root_path + img)
+	defer file.Close()
+	if err != nil {
+		beego.Error(err.Error())
+		return ""
+	}
+
+	img_source, err := png.Decode(file)
+	if err != nil {
+		beego.Error(err.Error())
+		return ""
+	}
+
+	b := img_source.Bounds()
+	width := b.Max.X
+	height := b.Max.Y
+	width = int(math.Ceil(float64(width) * 0.6))
+	height = int(math.Ceil(float64(height) * 0.6))
+	w := uint(width);
+	h := uint(height)
+
+	m := resize.Resize(w, h, img_source, resize.NearestNeighbor)
+	out, err := os.Create(root_path + img)
+	defer out.Close()
+	if err != nil {
+		beego.Error(err.Error())
+		return ""
+	}
+
+	png.Encode(out, m)
 
 	return img
 }
