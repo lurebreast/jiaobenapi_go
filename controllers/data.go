@@ -246,31 +246,27 @@ func (d *DataController) Getone() {
 			} else {
 				Orderid, _ = redis.String(rc.Do("LPOP", TidKey))
 			}
-			beego.Info(TidKey)
-			beego.Info(num)
-			beego.Info(Orderid)
 		} else {
 			if Orderid == "" {
 				Orderid, _ = redis.String(rc.Do("RPOP", TidKey))
-
-				beego.Info(TidKey)
-				beego.Info(Orderid)
 			}
 		}
 
-		var data1 models.Data
-		err := o.QueryTable(new(models.Data)).Filter("Tid", Tid).Filter("Orderid", Orderid).One(&data1)
-		if err != nil {
-			beego.Error(err.Error())
-		} else {
-			data := new(models.Data)
+		if Orderid != "" {
+			var data1 models.Data
+			err := o.QueryTable(new(models.Data)).Filter("Tid", Tid).Filter("Orderid", Orderid).One(&data1)
+			if err != nil {
+				beego.Error(err.Error())
+			} else {
+				data := new(models.Data)
 
-			data = &data1
-			data.Status = 2
-			o.Update(data, "Status")
+				data = &data1
+				data.Status = 2
+				o.Update(data, "Status")
 
-			d.success(data)
-			return
+				d.success(data)
+				return
+			}
 		}
 	} else {
 		OrderidInt := getOrderId(TidInt, false)
