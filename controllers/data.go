@@ -25,8 +25,10 @@ type DataController struct {
 // @Description 上传数据
 // @Param	Tid			post 	int 	true	"项目id"
 // @Param	Orderid		post	int 	false	"序号 当有值时更新数据"
-// @Param	Img			post 	string	false	"图片"
-// @Param	Img1		post 	string	false	"图片1"
+// @Param	Img			post 	string	false	"图片base64"
+// @Param	Img1		post 	string	false	"图片1base64"
+// @Param	File		post 	string	false	"文件base64"
+// @Param	FileName	post 	string	false	"文件名字"
 // @Param	Mobile		post	string	false	"手机号"
 // @Param	Account		post	string	false	"用户名"
 // @Param	Password	post 	string	false	"密码"
@@ -127,6 +129,11 @@ func (d *DataController) Post() {
 	}
 	if img1 := d.GetString("Img1"); img1 != "" {
 		data.Img1 = saveImg(img1, Tid, OrderId, "1")
+	}
+	if file := d.GetString("File"); file != "" {
+		if fileName := d.GetString("FileName"); fileName != "" {
+			data.File = saveFile(file, fileName, Tid, OrderId)
+		}
 	}
 
 	if isInsert {
@@ -344,6 +351,26 @@ func saveImg(s string, Tid int, Orderid int, imgId string) string {
 	png.Encode(out, m)
 
 	return img
+}
+
+func saveFile(s, fileName string, Tid, Orderid int) string {
+	s = strings.Replace(s, " ", "+", -1)
+	decode, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		beego.Info(s)
+		beego.Error(err.Error())
+		return ""
+	}
+
+	path := "/images/" + strconv.Itoa(Tid) + "_" + strconv.Itoa(Orderid) + "_3" + fileName
+	root_path := "/home/wwwroot/default/public"
+	err = ioutil.WriteFile(root_path + path, decode, 0666)
+	if err != nil {
+		beego.Error(err.Error())
+		return ""
+	}
+
+	return path
 }
 
 func getOrderId(t int, isIncr bool) int {

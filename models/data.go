@@ -12,6 +12,7 @@ type Data struct {
 	Updatetime string
 	Img string
 	Img1 string
+	File string
 	Mobile string
 	Account string
 	Password string
