@@ -233,13 +233,24 @@ func (d *DataController) Getone() {
 	}
 
 	TidInt, _ := strconv.Atoi(Tid)
+	o := orm.NewOrm()
+	type responseOne struct {
+		models.Data
+		Project models.Project
+	}
 
-	if getOrderId(TidInt, false) == 0 { // 通过序号检测项目是否存在
+	var dataOne responseOne
+	var project models.Project
+	err := o.QueryTable(new(models.Project)).Filter("Typeid", Tid).One(&project)
+	if err != nil {
 		d.Error("项目id错误")
 		return
 	}
 
-	o := orm.NewOrm()
+	if project.IsDelete == 1 {
+		d.Error("项目已经删除")
+		return
+	}
 
 	rc := RedisClient.Get();
 	defer rc.Close();
@@ -271,7 +282,10 @@ func (d *DataController) Getone() {
 				data.Status = 2
 				o.Update(data, "Status")
 
-				d.success(data)
+				dataOne.Data = *data;
+				dataOne.Project = project
+
+				d.success(dataOne)
 				return
 			}
 		}
@@ -292,7 +306,10 @@ func (d *DataController) Getone() {
 		if err != nil {
 			beego.Error(err.Error())
 		} else {
-			d.success(data1)
+			dataOne.Data = data1;
+			dataOne.Project = project
+
+			d.success(dataOne)
 			return
 		}
 	}
