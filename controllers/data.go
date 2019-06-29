@@ -166,7 +166,9 @@ func (d *DataController) Post() {
 // @Failure 403 body is empty
 // @router /count [get]
 func (d *DataController) Count() {
-	var total int64
+	var Total string
+	var Typename string
+	var result map[string]string
 
 	Tid := d.GetString("Tid")
 	Day, _ := d.GetInt("Day")
@@ -180,7 +182,7 @@ func (d *DataController) Count() {
 	rc := RedisClient.Get();
 	defer rc.Close();
 
-	key := "typeid_count_" + Tid + "_" + Status
+	key := "typeid_count2_" + Tid + "_" + Status + strconv.Itoa(Day)
 	if  ok, _ := redis.Bool(rc.Do("setnx", key + "_lock", "1")); ok {
 		rc.Do("expire", key + "_lock", 60)
 
@@ -200,15 +202,28 @@ func (d *DataController) Count() {
 		if err != nil {
 			beego.Error(err.Error())
 		} else {
-			total = t
+			Total = strconv.FormatInt(t, 10)
 		}
-		rc.Do("set", key, total)
+
+		var project models.Project
+		err = orm.NewOrm().QueryTable(new(models.Project)).Filter("Typeid", Tid).One(&project, "Typename")
+		if err != nil {
+			beego.Error(err.Error())
+		} else {
+			Typename = project.Typename
+		}
+
+		rc.Do("hset", key, "Total", Total)
+		rc.Do("hset", key, "Typename", Typename)
+
+		result = make(map[string]string)
+		result["Total"] = Total
+		result["Typename"] = Typename
 	} else {
-		total, _ = redis.Int64(rc.Do("get", key))
+		result, _ = redis.StringMap(rc.Do("hgetall", key))
 	}
 
-	data := map[string]int64{"Total": total}
-	d.success(data)
+	d.success(result)
 }
 
 // @Title 获取单条数据
@@ -233,24 +248,13 @@ func (d *DataController) Getone() {
 	}
 
 	TidInt, _ := strconv.Atoi(Tid)
-	o := orm.NewOrm()
-	type responseOne struct {
-		models.Data
-		Project models.Project
-	}
 
-	var dataOne responseOne
-	var project models.Project
-	err := o.QueryTable(new(models.Project)).Filter("Typeid", Tid).One(&project)
-	if err != nil {
+	if getOrderId(TidInt, false) == 0 { // 通过序号检测项目是否存在
 		d.Error("项目id错误")
 		return
 	}
 
-	if project.IsDelete == 1 {
-		d.Error("项目已经删除")
-		return
-	}
+	o := orm.NewOrm()
 
 	rc := RedisClient.Get();
 	defer rc.Close();
@@ -282,10 +286,7 @@ func (d *DataController) Getone() {
 				data.Status = 2
 				o.Update(data, "Status")
 
-				dataOne.Data = *data;
-				dataOne.Project = project
-
-				d.success(dataOne)
+				d.success(data)
 				return
 			}
 		}
@@ -306,10 +307,7 @@ func (d *DataController) Getone() {
 		if err != nil {
 			beego.Error(err.Error())
 		} else {
-			dataOne.Data = data1;
-			dataOne.Project = project
-
-			d.success(dataOne)
+			d.success(data1)
 			return
 		}
 	}
