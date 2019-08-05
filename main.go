@@ -14,7 +14,6 @@ func init() {
 	orm.Debug = ormDebug
 }
 
-
 func main() {
 	if beego.BConfig.RunMode == "dev" {
 		beego.BConfig.WebConfig.DirectoryIndex = true
