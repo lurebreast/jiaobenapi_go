@@ -22,3 +22,4 @@ func main() {
 
 	beego.Run()
 }
+
