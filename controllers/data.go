@@ -294,7 +294,8 @@ func (d *DataController) Getone() {
 		OrderidInt := getOrderId(TidInt, false)
 
 		if Rand == "1" {
-			Orderid1 := rand.Intn(OrderidInt - 1) + 1
+			MinOrderId := getMinOrderId(TidInt)
+			Orderid1 := rand.Intn(OrderidInt - 1 - MinOrderId) + 1 + MinOrderId
 			Orderid = strconv.Itoa(Orderid1)
 		} else {
 			if Orderid == "" {
@@ -414,4 +415,26 @@ func getOrderId(t int, isIncr bool) int {
 
 	orderid, _ :=  strconv.Atoi(typedataid)
 	return orderid
+}
+
+// 获取tid最orderid
+func getMinOrderId(tid int) int {
+	typeid := strconv.Itoa(tid)
+	r := RedisClient.Get()
+	defer r.Close()
+
+	key := "min_orderid_" + typeid
+
+	if exists, _ := redis.Bool(r.Do("exists", key + "_lock")); !exists {
+		r.Do("setex", key + "_lock", 60, 1)
+
+		var data models.Data
+		err  := orm.NewOrm().QueryTable(new(models.Data)).Filter("Tid", typeid).OrderBy("Orderid").Limit(1).One(&data, "Orderid")
+		if err == nil {
+			r.Do("set", key, data.Orderid)
+		}
+	}
+
+	typedataid, _ := redis.Int(r.Do("get", key))
+	return typedataid
 }
